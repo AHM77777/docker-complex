@@ -27,18 +27,18 @@ jobs:
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
       - name: Running deploy script
         run: |-
-          docker build -t ahernandez96/multi-client:latest -t ahernandez96/multi-client:${{ steps.vars.outputs.tag }} -f ./client/Dockerfile ./client
-          docker build -t ahernandez96/multi-server:latest -t ahernandez96/multi-server:${{ steps.vars.outputs.tag }} -f ./server/Dockerfile ./server
-          docker build -t ahernandez96/multi-worker:latest -t ahernandez96/multi-worker:${{ steps.vars.outputs.tag }} -f ./worker/Dockerfile ./worker
-          docker build -t ahernandez96/multi-nginx:latest -t ahernandez96/multi-nginx:${{ steps.vars.outputs.tag }} -f ./nginx/Dockerfile ./nginx
+          docker build -t ahernandez96/multi-client:latest -t ahernandez96/multi-client:${{ steps.vars.outputs.sha_short }} -f ./client/Dockerfile ./client
+          docker build -t ahernandez96/multi-server:latest -t ahernandez96/multi-server:${{ steps.vars.outputs.sha_short }} -f ./server/Dockerfile ./server
+          docker build -t ahernandez96/multi-worker:latest -t ahernandez96/multi-worker:${{ steps.vars.outputs.sha_short }} -f ./worker/Dockerfile ./worker
+          docker build -t ahernandez96/multi-nginx:latest -t ahernandez96/multi-nginx:${{ steps.vars.outputs.sha_short }} -f ./nginx/Dockerfile ./nginx
           docker push ahernandez96/multi-client:latest
           docker push ahernandez96/multi-server:latest
           docker push ahernandez96/multi-worker:latest
           docker push ahernandez96/multi-nginx:latest
-          docker push ahernandez96/multi-client:${{ steps.vars.outputs.tag }}
-          docker push ahernandez96/multi-server:${{ steps.vars.outputs.tag }}
-          docker push ahernandez96/multi-worker:${{ steps.vars.outputs.tag }}
-          docker push ahernandez96/multi-nginx:${{ steps.vars.outputs.tag }}
+          docker push ahernandez96/multi-client:${{ steps.vars.outputs.sha_short }}
+          docker push ahernandez96/multi-server:${{ steps.vars.outputs.sha_short }}
+          docker push ahernandez96/multi-worker:${{ steps.vars.outputs.sha_short }}
+          docker push ahernandez96/multi-nginx:${{ steps.vars.outputs.sha_short }}
   setup-and-deploy:
     needs: publish-to-hub
     name: Setup and Deploy to EB
