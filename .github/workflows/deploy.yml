@@ -1,0 +1,73 @@
+name: Deploy React app to EB
+
+on:
+  workflow_run:
+    workflows: Frontend unit tests
+    branches: [master]
+    types: completed
+
+env:
+  SHA: ${ GITHUB_SHA:10 }
+
+jobs:
+  publish-to-hub:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    name: Publish to dockerhub
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+      - name: Get the version
+        id: vars
+        run: echo ::set-output name=tag::$(echo ${ GITHUB_SHA:10 })
+      - name: Running deploy script
+        run: |-
+          docker build -t ahernandez96/multi-client:latest -t ahernandez96/multi-client:${{ steps.vars.outputs.tag }} -f ./client/Dockerfile ./client
+          docker build -t ahernandez96/multi-server:latest -t ahernandez96/multi-server:${{ steps.vars.outputs.tag }} -f ./server/Dockerfile ./server
+          docker build -t ahernandez96/multi-worker:latest -t ahernandez96/multi-worker:${{ steps.vars.outputs.tag }} -f ./worker/Dockerfile ./worker
+          docker build -t ahernandez96/multi-nginx:latest -t ahernandez96/multi-nginx:${{ steps.vars.outputs.tag }} -f ./nginx/Dockerfile ./nginx
+          docker push ahernandez96/multi-client:latest
+          docker push ahernandez96/multi-server:latest
+          docker push ahernandez96/multi-worker:latest
+          docker push ahernandez96/multi-nginx:latest
+          docker push ahernandez96/multi-client:${{ steps.vars.outputs.tag }}
+          docker push ahernandez96/multi-server:${{ steps.vars.outputs.tag }}
+          docker push ahernandez96/multi-worker:${{ steps.vars.outputs.tag }}
+          docker push ahernandez96/multi-nginx:${{ steps.vars.outputs.tag }}
+  setup-and-deploy:
+    needs: publish-to-hub
+    name: Setup and Deploy to EB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate deployment package
+        run: zip -r deploy.zip . -x '*.git' '**node_modules**' docker-compose.yml
+
+      - name: Get Timestamp
+        uses: gerred/actions/current-time@master
+        id: current-time
+
+      - name: Run String Replace
+        uses: frabert/replace-string-action@master
+        id: format-time
+        with:
+          pattern: '[:\.]+'
+          string: "${{ steps.current-time.outputs.time }}"
+          replace-with: '-'
+          flags: 'g'
+
+      - name: Deploy to EB
+        uses: einaregilsson/beanstalk-deploy@v18
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          application_name: multi-docker
+          environment_name: Multidocker-env
+          region: us-east-2
+          version_label: "docker-app-${{ steps.format-time.outputs.replaced }}"
+          deployment_package: deploy.zip
