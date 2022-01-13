@@ -7,7 +7,7 @@ on:
     types: completed
 
 env:
-  SHA: ${ GITHUB_SHA:10 }
+  SHA: ${{ GITHUB_SHA:10 }}
 
 jobs:
   publish-to-hub:
@@ -24,7 +24,7 @@ jobs:
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
       - name: Get the version
         id: vars
-        run: echo ::set-output name=tag::$(echo ${ GITHUB_SHA:10 })
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
       - name: Running deploy script
         run: |-
           docker build -t ahernandez96/multi-client:latest -t ahernandez96/multi-client:${{ steps.vars.outputs.tag }} -f ./client/Dockerfile ./client
