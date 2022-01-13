@@ -7,7 +7,7 @@ on:
     types: completed
 
 env:
-  SHA: ${{ GITHUB_SHA:10 }}
+  SHA: ${ GITHUB_SHA:10 }
 
 jobs:
   publish-to-hub:
