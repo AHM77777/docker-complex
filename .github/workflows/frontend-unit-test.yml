@@ -1,6 +1,9 @@
 name: Frontend unit tests
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   unit-test:
